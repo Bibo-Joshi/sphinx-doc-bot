@@ -1,0 +1,5 @@
+# Make sure to install those as additional_dependencies in the
+# pre-commit hooks for pylint & mypy
+python-telegram-bot==13.4.1
+Sphinx==3.5.4
+rapidfuzz==1.4.1
