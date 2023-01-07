@@ -1,39 +1,59 @@
 # Make sure that
-#   * the revs specified here match requirements-dev.txt
 #   * the additional_dependencies here match requirements.txt
+ci:
+  autoupdate_schedule: monthly
+
 repos:
-- repo: https://github.com/psf/black
-  rev: 20.8b1
-  hooks:
+  - repo: https://github.com/psf/black
+    rev: 22.12.0
+    hooks:
       - id: black
-        args:
-            - --diff
-            - --check
--   repo: https://gitlab.com/pycqa/flake8
-    rev: 3.9.1
+  - repo: https://github.com/PyCQA/flake8
+    rev: 6.0.0
     hooks:
-    -   id: flake8
--   repo: https://github.com/PyCQA/pylint
-    rev: pylint-2.7.4
+      - id: flake8
+  - repo: https://github.com/PyCQA/pylint
+    rev: v2.15.9
     hooks:
-    -   id: pylint
+      - id: pylint
         args:
-            - --rcfile=setup.cfg
+          - --rcfile=setup.cfg
+          #  run pylint across multiple cpu cores to speed it up-
+          - --jobs=0 # See https://pylint.pycqa.org/en/latest/user_guide/run.html?#parallel-execution to know more
         additional_dependencies:
-            - python-telegram-bot==13.4.1
-            - Sphinx==3.5.4
-            - rapidfuzz==1.4.1
--   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.812
+        - python-telegram-bot[job-queue]~=20.0
+        - httpx~=0.23
+        - Sphinx~=6.1
+        - rapidfuzz~=2.13
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v0.991
     hooks:
-    -   id: mypy
+      - id: mypy
         additional_dependencies:
-            - python-telegram-bot==13.4.1
-            - Sphinx==3.5.4
-            - rapidfuzz==1.4.1
--   repo: https://github.com/asottile/pyupgrade
-    rev: v2.13.0
+        - python-telegram-bot[job-queue]~=20.0
+        - httpx~=0.23
+        - Sphinx~=6.1
+        - rapidfuzz~=2.13
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.3.1
     hooks:
-    -   id: pyupgrade
+      - id: pyupgrade
         args:
-          - --py36-plus
+          - --py37-plus
+  - repo: https://github.com/pycqa/isort
+    rev: 5.11.4
+    hooks:
+      - id: isort
+        name: isort
+        args:
+        - --diff
+        - --check
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.0.210
+    hooks:
+      - id: ruff
+        additional_dependencies:
+        - python-telegram-bot[job-queue]~=20.0
+        - httpx~=0.23
+        - Sphinx~=6.1
+        - rapidfuzz~=2.13

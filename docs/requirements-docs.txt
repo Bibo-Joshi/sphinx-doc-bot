@@ -1,6 +1,3 @@
-sphinx==3.5.4
-sphinx_autodoc_typehints==1.12.0
-# When bumping this, make sure to rebuild the dark-mode CSS
-# More instructions at source/_static/dark.css
-# Ofc once https://github.com/readthedocs/sphinx_rtd_theme/issues/224 is closed, we should use that
-sphinx_rtd_theme==0.5.2
+sphinx==6.1.2
+furo==2022.12.7
+sphinx_autodoc_typehints==1.20.1

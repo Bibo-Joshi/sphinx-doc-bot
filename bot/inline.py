@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """The module contains functions for the inline mode."""
 import re
-from typing import cast, Tuple
+from typing import Tuple, cast
 
-from telegram import Update, InlineQuery, InlineQueryResultArticle, InputTextMessageContent
-from telegram.ext import CallbackContext
+from telegram import InlineQuery, InlineQueryResultArticle, InputTextMessageContent, Update
+from telegram.ext import ContextTypes
 
-from bot.constants import SSE_KEY, ENCLOSED_REGEX, ENCLOSING_CHAR
+from bot.constants import ENCLOSED_REGEX, ENCLOSING_CHAR, SSE_KEY
 from bot.sphinx_search_engine import SphinxSearchEngine
 
 
-def direct_search(update: Update, context: CallbackContext) -> None:
+async def direct_search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Puts the inline query directly through :meth:`SphinxSearchEngine.inline_results` and displays
     the corresponding results.
@@ -24,13 +24,13 @@ def direct_search(update: Update, context: CallbackContext) -> None:
     if not inline_query.query:
         return
     sse = cast(SphinxSearchEngine, context.bot_data[SSE_KEY])
-    inline_query.answer(
+    await inline_query.answer(
         results=lambda page: sse.inline_search_results(inline_query.query, page=page),
         auto_pagination=True,
     )
 
 
-def insert_search(update: Update, context: CallbackContext) -> None:
+async def insert_search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Searches for results for all terms enclosed in ``+`` and displays corresponding results.
 
@@ -52,16 +52,16 @@ def insert_search(update: Update, context: CallbackContext) -> None:
         text = inline_query.query
         for query, entry in combination.items():
             text = text.replace(
-                f'{ENCLOSING_CHAR}{query}{ENCLOSING_CHAR}',
+                f"{ENCLOSING_CHAR}{query}{ENCLOSING_CHAR}",
                 f'<a href="{entry.url}">{entry.name}</a>',
             )
         inline_results.append(
             InlineQueryResultArticle(
                 id=str(i),
-                title=f'Insert links to the documentation of {sse.project_description}',
+                title=f"Insert links to the documentation of {sse.project_description}",
                 input_message_content=InputTextMessageContent(text),
-                description=', '.join(entry.name for entry in combination.values()),
+                description=", ".join(entry.name for entry in combination.values()),
             )
         )
 
-    inline_query.answer(results=inline_results, auto_pagination=True)
+    await inline_query.answer(results=inline_results, auto_pagination=True)

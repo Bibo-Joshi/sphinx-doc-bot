@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """The module contains the classes :class:`SphinxSearchEngine` and :class:`SphinxDocEntry`."""
+import datetime as dtm
 import heapq
 import itertools
 import re
 from functools import lru_cache
-from threading import Lock
-import datetime as dtm
-from typing import Optional, Dict, List, Tuple
+from io import BytesIO
+from typing import Dict, List, Optional, Tuple, cast
 from urllib.parse import urljoin
-from urllib.request import Request, urlopen
 
+from httpx import AsyncClient, Request
 from rapidfuzz import fuzz
 from sphinx.util.inventory import InventoryFile
-from telegram import InlineQueryResultArticle, InputTextMessageContent
-from telegram.constants import MAX_INLINE_QUERY_RESULTS
+from telegram import InlineQueryResultArticle, InputTextMessageContent, constants
+from telegram.ext import Application, ContextTypes, JobQueue
 
 PreProcessedQuery = List[str]
 
@@ -79,7 +79,7 @@ class SphinxDocEntry:  # pylint: disable=R0903
 
         # IISC std: is the domain for general stuff like headlines and chapters.
         # we'll wanna give those a little less weight
-        if self.entry_type.startswith('std:'):
+        if self.entry_type.startswith("std:"):
             score *= 0.8
         return score
 
@@ -100,16 +100,22 @@ class SphinxSearchEngine:
     def __init__(self, url: str, cache_timeout: int) -> None:
         self.url = url
         self.cache_timeout = dtm.timedelta(minutes=cache_timeout)
-        self._last_cache_time: Optional[dtm.datetime] = None
-        self._user_agent = 'GitLab: HirschHeissIch/sphinx-doc-bot'
-        self._request = Request(
-            urljoin(self.url, 'objects.inv'), headers={'User-Agent': self._user_agent}
+        self._http_client = AsyncClient(
+            headers={"User-Agent": "GitHub: Bibo-Joshi/sphinx-doc-bot"}
         )
+        self._request = Request(method="GET", url=urljoin(self.url, "objects.inv"))
         self._doc_data: Dict[str, SphinxDocEntry] = {}
-        self.__lock = Lock()
 
-        # fetch docs for the first time
-        self.fetch_docs()
+    async def initialize(self, application: Application) -> None:
+        """Initializes the search engine by fetching the docs for the first time and scheduling
+        a job to do so repeatedly."""
+        await self.fetch_docs()
+        cast(JobQueue, application.job_queue).run_repeating(
+            callback=self._job, interval=self.cache_timeout
+        )
+
+    async def _job(self, _: ContextTypes.DEFAULT_TYPE) -> None:
+        await self.fetch_docs()
 
     @property
     def project_description(self) -> str:
@@ -129,40 +135,32 @@ class SphinxSearchEngine:
         """
         # reversed, so that 'class' matches the 'class' part of 'module.class' exactly instead of
         # not matching the 'module' part
-        return list(reversed(re.split(r'\.|/|-', query.strip())))
+        return list(reversed(re.split(r"\.|/|-", query.strip())))
 
-    def fetch_docs(self, cached: bool = True) -> None:
+    async def fetch_docs(self) -> None:
         """
         Fetches the documentation.
 
         Args:
             cached: Whether to respect caching or not. Defaults to :obj:`True`.
         """
-        now = dtm.datetime.now()
-
-        if (
-            cached
-            and self._last_cache_time is not None
-            and self._last_cache_time + self.cache_timeout <= now
-        ):
-            return
-
-        self._last_cache_time = now
-        docs_data = urlopen(self._request)
-        with self.__lock:
-            data = InventoryFile.load(docs_data, self.url, urljoin)
-            for entry_type, items in data.items():
-                for name, (project_name, version, url, display_name) in items.items():
-                    self._doc_data[name] = SphinxDocEntry(
-                        name=name,
-                        project_name=project_name,
-                        version=version,
-                        url=url,
-                        display_name=display_name if display_name.strip() != '-' else None,
-                        entry_type=entry_type,
-                    )
-            # This is important: If the docs have changed the cache is useless
-            self.search.cache_clear()
+        response = await self._http_client.send(self._request)
+        docs_data = response.content
+        data = InventoryFile.load(BytesIO(docs_data), self.url, urljoin)
+        for entry_type, items in data.items():
+            for name, (project_name, version, url, display_name) in items.items():
+                self._doc_data[name] = SphinxDocEntry(
+                    name=name,
+                    project_name=project_name,
+                    version=version,
+                    url=url,
+                    display_name=display_name if display_name.strip() != "-" else None,
+                    entry_type=entry_type,
+                )
+        # This is important: If the docs have changed the cache is useless
+        self.search.cache_clear()
+        self.inline_search_results.cache_clear()
+        self.multi_search_combinations.cache_clear()
 
     @lru_cache(maxsize=256)
     def search(self, query: str, count: int = None) -> List[SphinxDocEntry]:
@@ -178,20 +176,19 @@ class SphinxSearchEngine:
             The sorted results.
         """
         processed_query = self.parse_query(query)
-        with self.__lock:
-            entries = list(self._doc_data.values())
+        entries = list(self._doc_data.values())
 
-            def sort_key(entry: SphinxDocEntry) -> float:
-                return entry.compare_to(query, processed_query)
+        def sort_key(entry: SphinxDocEntry) -> float:
+            return entry.compare_to(query, processed_query)
 
-            if not count:
-                return sorted(
-                    entries,
-                    key=sort_key,
-                    # We want high values first
-                    reverse=True,
-                )
-            return heapq.nlargest(count, entries, key=sort_key)
+        if not count:
+            return sorted(
+                entries,
+                key=sort_key,
+                # We want high values first
+                reverse=True,
+            )
+        return heapq.nlargest(count, entries, key=sort_key)
 
     @lru_cache(maxsize=256)
     def inline_search_results(self, query: str, page: int = 0) -> List[InlineQueryResultArticle]:
@@ -205,19 +202,20 @@ class SphinxSearchEngine:
             The inline results.
 
         """
+        max_inline_query_results = constants.InlineQueryLimit.RESULTS
         sorted_entries = self.search(query)[
-            page * MAX_INLINE_QUERY_RESULTS : (page + 1) * MAX_INLINE_QUERY_RESULTS  # noqa: E203
+            page * max_inline_query_results : (page + 1) * max_inline_query_results  # noqa: E203
         ]
         return [
             InlineQueryResultArticle(
-                id=str(i + page * MAX_INLINE_QUERY_RESULTS),
+                id=str(i + page * max_inline_query_results),
                 title=entry.name,
                 input_message_content=InputTextMessageContent(
                     f'Documentation of <i>{entry.project_name}</i>: <a href="{entry.url}">'
-                    f'{entry.display_name or entry.name}</a>'
+                    f"{entry.display_name or entry.name}</a>"
                 ),
                 description=(
-                    f'Documentation of {entry.project_name}'
+                    f"Documentation of {entry.project_name}"
                     f'{", " + entry.display_name if entry.display_name else ""}'
                 ),
             )

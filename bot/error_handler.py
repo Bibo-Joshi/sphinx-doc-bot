@@ -15,7 +15,7 @@ from bot.constants import ADMIN_KEY
 logger = logging.getLogger(__name__)
 
 
-def error_handler(update: object, context: CallbackContext) -> None:
+async def error_handler(update: object, context: CallbackContext) -> None:
     """
     Log the error and send a Telegram message to notify the admin.
 
@@ -32,29 +32,29 @@ def error_handler(update: object, context: CallbackContext) -> None:
     tb_list = traceback.format_exception(
         None, context.error, cast(Exception, context.error).__traceback__
     )
-    tb_string = ''.join(tb_list)
+    tb_string = "".join(tb_list)
 
     # Build the message with some markup and additional information about what happened.
     # You might need to add some logic to deal with messages longer than the 4096 character limit.
     update_str = update.to_dict() if isinstance(update, Update) else str(update)
     message_1 = (
-        f'An exception was raised while handling an update\n\n'
-        f'<pre>update = {html.escape(json.dumps(update_str, indent=2, ensure_ascii=False))}</pre>'
+        f"An exception was raised while handling an update\n\n"
+        f"<pre>update = {html.escape(json.dumps(update_str, indent=2, ensure_ascii=False))}</pre>"
     )
-    message_2 = f'<pre>{html.escape(tb_string)}</pre>'
+    message_2 = f"<pre>{html.escape(tb_string)}</pre>"
 
     # Finally, send the messages
     # We send update and traceback in two parts to reduce the chance of hitting max length
     admin_id = context.bot_data[ADMIN_KEY]
     try:
-        sent_message = context.bot.send_message(chat_id=admin_id, text=message_1)
-        sent_message.reply_html(message_2)
+        sent_message = await context.bot.send_message(chat_id=admin_id, text=message_1)
+        await sent_message.reply_html(message_2)
     except BadRequest as exc:
-        if 'too long' in str(exc):
+        if "too long" in str(exc):
             message = (
-                f'Hey.\nThe error <code>{html.escape(str(context.error))}</code> happened.'
-                f' The traceback is too long to send, but it was written to the log.'
+                f"Hey.\nThe error <code>{html.escape(str(context.error))}</code> happened."
+                f" The traceback is too long to send, but it was written to the log."
             )
-            context.bot.send_message(chat_id=admin_id, text=message)
+            await context.bot.send_message(chat_id=admin_id, text=message)
         else:
             raise exc
