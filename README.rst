@@ -29,6 +29,10 @@ Sphinx Doc Bot
    :target: https://t.me/PythonDocBot
    :alt: Example Instance
 
+.. image:: https://results.pre-commit.ci/badge/github/Bibo-Joshi/sphinx-doc-bot/main.svg
+   :target: https://results.pre-commit.ci/latest/github/Bibo-Joshi/sphinx-doc-bot/main
+   :alt: pre-commit.ci status
+
 
 A Telegram bot that lets you search Sphinx based documentation. Head `here <https://hirschheissich.gitlab.io/sphinx-doc-bot/userguide.html>`_ for the user guide. An instance searching the `Python docs <https://docs.python.org>`_ can be found at `@PythonDocBot <https://t.me/PythonDocBot>`_.
 
@@ -55,6 +59,6 @@ To set up a bot, you only need to install the dependencies via ``pip install -r 
 * ``admins_chat_id``: your Telegram ID. Used to send error reports
 * ``docs_url``: The URL where your Sphinx documentation is hosted.
 * ``cache_timeout``: The documentation is fetched in a cached manner, i.e. the short URLS are retrieved at most every ``cache_timeout`` minutes.
-  Defaults to 60 seconds.
+  Defaults to 60 minutes.
 
 That's it. Run the bot via ``python main.py``. 🤖
