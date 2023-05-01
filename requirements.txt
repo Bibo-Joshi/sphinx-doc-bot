@@ -2,5 +2,5 @@
 # pre-commit hooks for pylint & mypy
 python-telegram-bot[job-queue]~=20.2
 httpx~=0.23
-Sphinx~=6.1
+Sphinx~=7.0
 rapidfuzz~=2.14
