@@ -1,6 +1,6 @@
 # Make sure to install those as additional_dependencies in the
 # pre-commit hooks for pylint & mypy
 python-telegram-bot[job-queue]~=20.2
-httpx~=0.23
+httpx~=0.24
 Sphinx~=7.0
 rapidfuzz~=3.0
