@@ -26,7 +26,7 @@ repos:
         - Sphinx~=7.0
         - rapidfuzz~=3.0
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.2.0
+    rev: v1.3.0
     hooks:
       - id: mypy
         additional_dependencies:
@@ -35,7 +35,7 @@ repos:
         - Sphinx~=7.0
         - rapidfuzz~=3.0
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.3.2
+    rev: v3.4.0
     hooks:
       - id: pyupgrade
         args:
@@ -49,7 +49,7 @@ repos:
         - --diff
         - --check
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.263
+    rev: v0.0.270
     hooks:
       - id: ruff
         additional_dependencies:
