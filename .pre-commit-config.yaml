@@ -35,7 +35,7 @@ repos:
         - Sphinx~=7.0
         - rapidfuzz~=3.2
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.20.1
+    rev: v3.10.1
     hooks:
       - id: pyupgrade
         args:
