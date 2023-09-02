@@ -8,4 +8,3 @@ bot package
     bot.setup
     bot.simple_commands
     bot.sphinx_search_engine
-    bot.simple_commands
