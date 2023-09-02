@@ -43,7 +43,7 @@ extensions = [
 # Use intersphinx to reference the python-telegram-bot docs
 intersphinx_mapping = {
     "telegram": ("https://python-telegram-bot.readthedocs.io/en/latest/", None),
-    "https://docs.python.org/3/": None,
+    "python": ("https://docs.python.org/3/", None),
 }
 
 napoleon_use_admonition_for_examples = True
