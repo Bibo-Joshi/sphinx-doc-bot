@@ -3,4 +3,4 @@
 python-telegram-bot[job-queue]~=20.4
 httpx~=0.24
 Sphinx~=7.2
-rapidfuzz~=3.2
+rapidfuzz~=3.3
