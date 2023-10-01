@@ -22,7 +22,7 @@ repos:
           - --jobs=0 # See https://pylint.pycqa.org/en/latest/user_guide/run.html?#parallel-execution to know more
         additional_dependencies:
         - python-telegram-bot[job-queue]~=20.5
-        - httpx~=0.24
+        - httpx~=0.25
         - Sphinx~=7.2
         - rapidfuzz~=3.3
   - repo: https://github.com/pre-commit/mirrors-mypy
@@ -31,7 +31,7 @@ repos:
       - id: mypy
         additional_dependencies:
         - python-telegram-bot[job-queue]~=20.5
-        - httpx~=0.24
+        - httpx~=0.25
         - Sphinx~=7.2
         - rapidfuzz~=3.3
   - repo: https://github.com/asottile/pyupgrade
@@ -54,6 +54,6 @@ repos:
       - id: ruff
         additional_dependencies:
         - python-telegram-bot[job-queue]~=20.5
-        - httpx~=0.24
+        - httpx~=0.25
         - Sphinx~=7.2
         - rapidfuzz~=3.3
